@@ -217,7 +217,9 @@ public:
     std::shared_ptr<T> sendMessage(const double timeout = 0) {
         auto message = std::make_shared<T>(fw_variant_);
         message->setAPIVersion(client_.getApiVersion());
-        sendMessage(*message, timeout);
+        if (!sendMessage(*message, timeout)) {
+           throw std::runtime_error("Failed to send a message %i");
+        }
         return message;
     }
 
