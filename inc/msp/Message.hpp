@@ -25,7 +25,14 @@ public:
      * @param v FirmwareVariant specifing which firmware this message should
      * tailor itself to.
      */
-    Message(FirmwareVariant v) : fw_variant(v) {}
+    Message(FirmwareVariant v) : fw_variant(v), api_version_(0) {}
+
+    /**
+     * @brief Message constructor accepting a FirmwareVariant
+     * @param v FirmwareVariant specifing which firmware this message should
+     * tailor itself to.
+     */
+    Message(FirmwareVariant v, uint api_version) : fw_variant(v), api_version_(api_version) {}
 
     /**
      * @brief Message destructor
@@ -44,6 +51,8 @@ public:
      * @returns FirmwareVariant for this message
      */
     FirmwareVariant getFirmwareVariant() const { return fw_variant; }
+
+    void setAPIVersion(uint v) { api_version_ = v; }
 
     /**
      * @brief Decode message contents from a ByteVector
@@ -66,6 +75,7 @@ public:
 
 protected:
     FirmwareVariant fw_variant;
+    uint api_version_;
 };
 
 }  // namespace msp

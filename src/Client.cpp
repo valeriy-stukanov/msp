@@ -25,6 +25,8 @@ bool Client::setVersion(const int& ver) {
     return false;
 }
 
+void Client::setApiVersion(uint ver) { api_ver_ = ver; }
+
 int Client::getVersion() const { return msp_ver_; }
 
 void Client::setVariant(const FirmwareVariant& v) { fw_variant = v; }

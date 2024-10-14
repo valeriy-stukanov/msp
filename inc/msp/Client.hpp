@@ -62,6 +62,13 @@ public:
     bool setVersion(const int& ver);
 
     /**
+     * @brief Set MSP api version
+     * @param ver Version of API in format {major} * 1000 + {minor},
+     * like 1045 for 1.45v
+     */
+    void setApiVersion(uint ver);
+
+    /**
      * @brief Query the cached device path
      * @return Cached path to device
      */
@@ -160,8 +167,10 @@ public:
             std::bind(&Client::sendMessageNoWait, this, std::placeholders::_1);
 
         // create a shared pointer to a new Subscription and set all properties
+        auto io_object = std::make_unique<T>(fw_variant);
+        io_object->setAPIVersion(api_ver_);
         auto subscription = std::make_shared<Subscription<T>>(
-            recv_callback, send_callback, std::make_unique<T>(fw_variant), tp);
+            recv_callback, send_callback, std::move(io_object), tp);
 
         // gonna modify the subscription map, so lock the mutex
         std::lock_guard<std::mutex> lock(mutex_subscriptions);
@@ -363,6 +372,7 @@ protected:
 
     // reference values
     int msp_ver_;
+    uint api_ver_ {0};
     FirmwareVariant fw_variant;
 };
 

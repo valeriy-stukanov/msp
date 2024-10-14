@@ -3148,9 +3148,14 @@ struct RcTuningSettings {
     std::array<Value<uint8_t>, 3> rcRates;
     std::array<Value<uint8_t>, 3> rcExpo;
 
+    std::array<Value<uint16_t>, 3> rate_limits;
+    Value<uint8_t> rate_type;
+
     Value<uint8_t> dynamic_throttle_pid;
     Value<uint8_t> throttle_mid;
     Value<uint8_t> throttle_expo;
+    Value<uint8_t> throttle_limit_type;
+    Value<uint8_t> throttle_limit_percent;
     Value<uint16_t> tpa_breakpoint;
 
     std::ostream& print(std::ostream& s) const {
@@ -3179,7 +3184,7 @@ struct RcTuning : public RcTuningSettings, public Message {
         rc &= data.unpack(rcRates[0]);
         rc &= data.unpack(rcExpo[0]);
         for(size_t i = 0; i < 3; ++i) {
-            rc &= data.unpack(rates[0]);
+            rc &= data.unpack(rates[i]);
         }
         rc &= data.unpack(dynamic_throttle_pid);
         rc &= data.unpack(throttle_mid);
@@ -3190,6 +3195,16 @@ struct RcTuning : public RcTuningSettings, public Message {
         rc &= data.unpack(rcRates[2]);
         rc &= data.unpack(rcRates[1]);
         rc &= data.unpack(rcExpo[1]);
+        rc &= data.unpack(throttle_limit_type);
+        rc &= data.unpack(throttle_limit_percent);
+
+        if(api_version_ < 1042) return rc;
+        rc &= data.unpack(rate_limits[0]);
+        rc &= data.unpack(rate_limits[1]);
+        rc &= data.unpack(rate_limits[2]);
+
+        if(api_version_ < 1043) return rc;
+        rc &= data.unpack(rate_type);
         return rc;
     }
 };
