@@ -68,6 +68,8 @@ public:
      */
     void setApiVersion(uint ver);
 
+    uint getApiVersion() const;
+
     /**
      * @brief Query the cached device path
      * @return Cached path to device

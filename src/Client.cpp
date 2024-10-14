@@ -26,6 +26,7 @@ bool Client::setVersion(const int& ver) {
 }
 
 void Client::setApiVersion(uint ver) { api_ver_ = ver; }
+uint Client::getApiVersion() const { return api_ver_; }
 
 int Client::getVersion() const { return msp_ver_; }
 

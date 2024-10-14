@@ -212,6 +212,15 @@ public:
         return client_.sendMessage(message, timeout);
     }
 
+    template <typename T, class = typename std::enable_if<
+                              std::is_base_of<msp::Message, T>::value>::type>
+    std::shared_ptr<T> sendMessage(const double timeout = 0) {
+        auto message = std::make_shared<T>(fw_variant_);
+        message->setAPIVersion(client_.getApiVersion());
+        sendMessage(*message, timeout);
+        return message;
+    }
+
     /**
      * @brief Queries the flight controller for Box (flight mode) information
      */
