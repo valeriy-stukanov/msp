@@ -124,14 +124,20 @@ bool Client::stopSubscriptions() {
 }
 
 bool Client::sendMessage(msp::Message& message, const double& timeout) {
+    auto msg_id = size_t(message.id());
+
     if(log_level_ >= DEBUG)
-        std::cout << "sending message - ID " << size_t(message.id())
-                  << std::endl;
+        std::cout << msg_id << ": sending..." << std::endl;
+
     if(!sendData(message.id(), message.encode())) {
         if(log_level_ >= WARNING)
-            std::cerr << "message failed to send" << std::endl;
+            std::cerr << msg_id <<  ": message failed to send" << std::endl;
         return false;
     }
+
+    if (log_level_ >= DEBUG)
+        std::cout << msg_id << ": sent" << std::endl;
+
     // prepare the condition check
     std::unique_lock<std::mutex> lock(cv_response_mtx);
     const auto predicate = [&] {
@@ -239,7 +245,22 @@ ByteVector Client::packMessageV1(const msp::ID id,
 }
 
 uint8_t Client::crcV1(const uint8_t id, const ByteVector& data) const {
-    uint8_t crc = uint8_t(data.size()) ^ id;
+    size_t full_size = data.size();
+
+    uint8_t crc = uint8_t(data.size());
+    bool is_jumbo = full_size >= JUMBO_FRAME_MIN_SIZE;
+
+    if (is_jumbo) {
+        crc = JUMBO_FRAME_MIN_SIZE;
+    }
+
+    crc ^= id;
+
+    if (is_jumbo) {
+        crc ^= full_size & 0xFF;
+        crc ^= (full_size & 0xFF00) >> 8;
+    }
+
     for(const uint8_t d : data) {
         crc = crc ^ d;
     }
@@ -407,6 +428,7 @@ ReceivedMessage Client::processOneMessageV1() {
 
     // payload length
     const uint8_t len = extractChar();
+    const bool is_jumbo_msg = len >= JUMBO_FRAME_MIN_SIZE;
 
     // message ID
     uint8_t id = extractChar();
@@ -417,9 +439,23 @@ ReceivedMessage Client::processOneMessageV1() {
                   << " is not recognised!" << std::endl;
     }
 
-    // payload
-    for(size_t i(0); i < len; i++) {
-        ret.payload.push_back(extractChar());
+    if (is_jumbo_msg) {
+        uint8_t low_b = extractChar();
+        uint8_t high_b = extractChar();
+        uint16_t real_len = (high_b << 8) + low_b;
+
+        if (log_level_ >= DEBUG) {
+            std::cout << "jumbo msg, real length: " << real_len << std::endl;
+        }
+
+        for(size_t i(0); i < real_len; i++) {
+            ret.payload.push_back(extractChar());
+        }
+    } else {
+        // payload
+        for(size_t i(0); i < len; i++) {
+            ret.payload.push_back(extractChar());
+        }
     }
 
     // CRC

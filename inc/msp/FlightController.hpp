@@ -333,6 +333,13 @@ public:
     bool isStatusFailsafe() { return isStatusActive("FAILSAFE"); }
 
     /**
+     * @brief Queries the flight controller to see if the MSP OVERRIDE status is
+     * active.
+     * @return True if the MSP OVERRIDE status is active
+     */
+    bool isMspOverride() { return isStatusActive("MSP OVERRIDE"); }
+
+    /**
      * @brief Directly sets motor values using SetMotor message
      * @return True on successful message delivery
      */

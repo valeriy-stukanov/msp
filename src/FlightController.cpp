@@ -66,7 +66,7 @@ bool FlightController::connect(const std::string &device, const size_t baudrate,
     capabilities_ = ident.capabilities;
 
     // get boxes
-    // initBoxes();
+    initBoxes();
 
     // determine channel mapping
     if(getFwVariant() == msp::FirmwareVariant::MWII) {
@@ -216,7 +216,9 @@ void FlightController::initBoxes() {
 
     box_name_ids_.clear();
     for(size_t ibox(0); ibox < box_names.box_names.size(); ibox++) {
-        if(getFwVariant() == msp::FirmwareVariant::CLFL) {
+        auto fw = getFwVariant();
+        if(fw == msp::FirmwareVariant::CLFL ||
+            fw == msp::FirmwareVariant::BTFL) {
             // workaround for wrong box ids in cleanflight
             // cleanflight's box ids are in order of the box names
             // https://github.com/cleanflight/cleanflight/issues/2606

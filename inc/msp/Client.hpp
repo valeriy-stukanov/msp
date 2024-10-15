@@ -16,6 +16,8 @@
 namespace msp {
 namespace client {
 
+const uint8_t JUMBO_FRAME_MIN_SIZE = 255;
+
 typedef asio::buffers_iterator<asio::streambuf::const_buffers_type> iterator;
 
 enum LoggingLevel { SILENT, WARNING, INFO, DEBUG };
