@@ -216,9 +216,7 @@ void FlightController::initBoxes() {
 
     box_name_ids_.clear();
     for(size_t ibox(0); ibox < box_names.box_names.size(); ibox++) {
-        auto fw = getFwVariant();
-        if(fw == msp::FirmwareVariant::CLFL ||
-            fw == msp::FirmwareVariant::BTFL) {
+        if(getFwVariant() == msp::FirmwareVariant::CLFL) {
             // workaround for wrong box ids in cleanflight
             // cleanflight's box ids are in order of the box names
             // https://github.com/cleanflight/cleanflight/issues/2606
