@@ -205,7 +205,7 @@ bool Client::sendData(const msp::ID id, const ByteVector& data) {
     if(log_level_ >= DEBUG)
         std::cout << "sending: " << size_t(id) << " | " << data;
     ByteVector msg;
-    if(msp_ver_ == 2) {
+    if(static_cast<int>(id)) {
         msg = packMessageV2(id, data);
     }
     else {
