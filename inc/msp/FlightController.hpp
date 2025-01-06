@@ -212,6 +212,10 @@ public:
         return client_.sendMessage(message, timeout);
     }
 
+    bool sendMessageNoWait(msp::Message &message) {
+        return client_.sendMessageNoWait(message);
+    }
+
     template <typename T, class = typename std::enable_if<
                               std::is_base_of<msp::Message, T>::value>::type>
     std::shared_ptr<T> sendMessage(const double timeout = 0) {
