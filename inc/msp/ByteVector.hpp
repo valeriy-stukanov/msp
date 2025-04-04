@@ -222,7 +222,7 @@ public:
         if(unpacking_remaining() < sizeof(val)) return false;
         val = 0;
         for(size_t i(0); i < sizeof(val); ++i) {
-            val |= (*this)[offset++] << (8 * i);
+            val |= static_cast<T>((*this)[offset++]) << (8 * i);
         }
         return true;
     }
