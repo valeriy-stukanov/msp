@@ -35,6 +35,9 @@ void Client::setVariant(const FirmwareVariant& v) { fw_variant = v; }
 FirmwareVariant Client::getVariant() const { return fw_variant; }
 
 bool Client::start(const std::string& device, const size_t baudrate) {
+    device_ = device;
+    baudrate_ = baudrate;
+
     return connectPort(device, baudrate) && startReadThread() &&
            startSubscriptions();
 }
@@ -73,6 +76,31 @@ bool Client::disconnectPort() {
 
 bool Client::isConnected() const { return port.is_open(); }
 
+void Client::waitForConnection() {
+    running_.clear();
+
+    buffer.consume(buffer.size());
+    io.reset();
+
+    while (true) {
+        try {
+            if (isConnected()) {
+                disconnectPort();
+            }
+
+            if (!device_.empty()) {
+                connectPort(device_, baudrate_);
+                running_.test_and_set();
+                break;
+            }
+        } catch (...) {
+            std::cerr << "Unable to connect. reconect in 1s" << std::endl;
+        }
+
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+}
+
 bool Client::startReadThread() {
     // no point reading if we arent connected to anything
     if(!isConnected()) return false;
@@ -80,7 +108,12 @@ bool Client::startReadThread() {
     if(running_.test_and_set()) return false;
     // hit it!
     thread = std::thread([this] {
-        asio::async_read_until(port,
+        while (true) {
+            try {
+                if (log_level_ >= DEBUG)
+                    std::cout << "start port reading: " << device_ << " (" << baudrate_ << ")" << std::endl;
+
+                asio::async_read_until(port,
                                buffer,
                                std::bind(&Client::messageReady,
                                          this,
@@ -90,7 +123,15 @@ bool Client::startReadThread() {
                                          this,
                                          std::placeholders::_1,
                                          std::placeholders::_2));
-        io.run();
+
+                io.run();
+            } catch (const std::exception &err) {
+                if (log_level_ >= WARNING)
+                    std::cerr << "serial connection lost" << err.what() << std::endl;
+
+                waitForConnection();
+            }
+        }
     });
     return true;
 }
@@ -180,6 +221,10 @@ bool Client::sendMessage(msp::Message& message, const double& timeout) {
 }
 
 bool Client::sendMessageNoWait(const msp::Message& message) {
+    if (!isConnected()) {
+        return true;
+    }
+
     if(log_level_ >= DEBUG)
         std::cout << "async sending message - ID " << size_t(message.id())
                   << std::endl;
@@ -321,10 +366,14 @@ void Client::processOneMessage(const asio::error_code& ec,
     }
 
     // ignore and remove header bytes
-    const uint8_t msg_marker = extractChar();
-    if(msg_marker != '$')
-        std::cerr << "Message marker " << size_t(msg_marker)
-                  << " is not recognised!" << std::endl;
+    uint8_t msg_marker {};
+    do {
+        msg_marker = extractChar();
+
+        if(msg_marker != '$' && log_level_ >= INFO)
+            std::cerr << "Message marker " << size_t(msg_marker)
+                      << " is not recognised!" << std::endl;
+    } while (msg_marker != '$');
 
     // message version
     int ver                  = 0;
@@ -334,6 +383,19 @@ void Client::processOneMessage(const asio::error_code& ec,
     if(ver == 0) {
         std::cerr << "Version marker " << size_t(ver_marker)
                   << " is not recognised!" << std::endl;
+
+        asio::async_read_until(port,
+                               buffer,
+                               std::bind(&Client::messageReady,
+                                         this,
+                                         std::placeholders::_1,
+                                         std::placeholders::_2),
+                               std::bind(&Client::processOneMessage,
+                                         this,
+                                         std::placeholders::_1,
+                                         std::placeholders::_2));
+
+        return;
     }
 
     ReceivedMessage recv_msg;

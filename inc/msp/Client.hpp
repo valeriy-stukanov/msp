@@ -121,6 +121,8 @@ public:
      */
     bool sendMessage(msp::Message& message, const double& timeout = 0);
 
+    void waitForConnection();
+
     /**
      * @brief Send a message, but do not wait for any response
      * @param message Reference to a Message-derived object to be sent
@@ -352,6 +354,9 @@ protected:
     asio::io_service io;     ///<! io service
     asio::serial_port port;  ///<! port for serial device
     asio::streambuf buffer;
+
+    std::string device_;
+    size_t baudrate_ {0};
 
     // read thread management
     std::thread thread;
