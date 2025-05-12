@@ -43,6 +43,9 @@ bool Client::start(const std::string& device, const size_t baudrate) {
 }
 
 bool Client::stop() {
+    if (log_level_ > DEBUG)
+        std::cout << "Client: stop requested" << std::endl;
+
     return disconnectPort() && stopReadThread() && stopSubscriptions();
 }
 
@@ -108,7 +111,7 @@ bool Client::startReadThread() {
     if(running_.test_and_set()) return false;
     // hit it!
     thread = std::thread([this] {
-        while (true) {
+        while (running_.test_and_set()) {
             try {
                 if (log_level_ >= DEBUG)
                     std::cout << "start port reading: " << device_ << " (" << baudrate_ << ")" << std::endl;
@@ -125,23 +128,29 @@ bool Client::startReadThread() {
                                          std::placeholders::_2));
 
                 io.run();
+                std::this_thread::sleep_for(std::chrono::seconds(1));
             } catch (const std::exception &err) {
                 if (log_level_ >= WARNING)
                     std::cerr << "serial connection lost" << err.what() << std::endl;
 
                 waitForConnection();
             }
-
-            std::this_thread::sleep_for(std::chrono::seconds(1));
         }
+
+        running_.clear();
     });
     return true;
 }
 
 bool Client::stopReadThread() {
+    if (log_level_ > DEBUG)
+        std::cout << "Client: stop read thread" << std::endl;
+
     bool rc = false;
     if(running_.test_and_set()) {
         io.stop();
+        // we need to clear flag before join reading thread
+        running_.clear();
         thread.join();
         io.reset();
         rc = true;
@@ -159,6 +168,9 @@ bool Client::startSubscriptions() {
 }
 
 bool Client::stopSubscriptions() {
+    if (log_level_ > DEBUG)
+        std::cout << "Client: stop subscriptions" << std::endl;
+
     bool rc = true;
     for(const auto& sub : subscriptions) {
         rc &= sub.second->stop();
