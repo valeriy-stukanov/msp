@@ -4163,6 +4163,7 @@ struct Displayport : public Message {
     Value<uint8_t> sub_cmd;
     Value<uint8_t> row;
     Value<uint8_t> col;
+    Value<uint8_t> attr;
     Value<std::string> str;
 
     virtual ByteVectorUptr encode() const override {
@@ -4172,12 +4173,29 @@ struct Displayport : public Message {
         if(sub_cmd() == 3) {
             rc &= data->pack(row);
             rc &= data->pack(col);
-            rc &= data->pack(uint8_t(0));
+            rc &= data->pack(attr);
             rc &= data->pack(uint8_t(str().size()));
             rc &= data->pack(str);
         }
         if(!rc) data.reset();
         return data;
+    }
+
+    virtual bool decode(const ByteVector &data) override {
+        bool rc = true;
+        // char str_buf[30] = {};
+        // auto str_len = data.size() - 4;
+        rc &= data.unpack(sub_cmd);
+
+        if (sub_cmd() == 3) {
+            rc &= data.unpack(row);
+            rc &= data.unpack(col);
+            rc &= data.unpack(row);
+            // rc &= data.unpack(str, str_len);
+            rc &= data.unpack(str);
+        }
+
+        return rc;
     }
 };
 
