@@ -164,6 +164,8 @@ enum class ID : uint16_t {
     MSP_SET_BEEPER_CONFIG              = 185,  // not in iNav
     MSP_SET_TX_INFO                    = 186,  // in message
     MSP_TX_INFO                        = 187,  // out message
+    MSP_SET_OSD_CANVAS                 = 188,
+    MSP_OSD_CANVAS                     = 189,
     MSP_SET_RAW_RC                     = 200,
     MSP_SET_RAW_GPS                    = 201,
     MSP_SET_PID                        = 202,
