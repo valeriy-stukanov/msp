@@ -4183,15 +4183,12 @@ struct Displayport : public Message {
 
     virtual bool decode(const ByteVector &data) override {
         bool rc = true;
-        // char str_buf[30] = {};
-        // auto str_len = data.size() - 4;
         rc &= data.unpack(sub_cmd);
 
         if (sub_cmd() == 3) {
             rc &= data.unpack(row);
             rc &= data.unpack(col);
-            rc &= data.unpack(row);
-            // rc &= data.unpack(str, str_len);
+            rc &= data.unpack(attr);
             rc &= data.unpack(str);
         }
 
