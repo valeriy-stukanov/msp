@@ -17,7 +17,8 @@ enum class FirmwareVariant : int {
     BTFL = 3, /**< ButterFlight */
     CLFL = 4, /**< CleanFlight */
     INAV = 5, /**< INAV */
-    RCFL = 6  /**< RaceFlight */
+    RCFL = 6,  /**< RaceFlight */
+    ARDU = 7  /**< ArduPilot */
 };
 
 const static std::map<std::string, FirmwareVariant> variant_map = {
@@ -26,7 +27,8 @@ const static std::map<std::string, FirmwareVariant> variant_map = {
     {"BTFL", FirmwareVariant::BTFL},
     {"CLFL", FirmwareVariant::CLFL},
     {"INAV", FirmwareVariant::INAV},
-    {"RCFL", FirmwareVariant::RCFL}};
+    {"RCFL", FirmwareVariant::RCFL},
+    {"ARDU", FirmwareVariant::ARDU}};
 
 /**
  * @brief Converts a FirmwareVariant into a matching string
@@ -53,6 +55,9 @@ inline std::string firmwareVariantToString(FirmwareVariant variant) {
         break;
     case FirmwareVariant::RCFL:
         var = "RCFL";
+        break;
+    case FirmwareVariant::ARDU:
+        var = "ARDU";
         break;
     default:
         var = "NONE";
