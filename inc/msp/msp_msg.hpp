@@ -4165,6 +4165,8 @@ struct Displayport : public Message {
     Value<uint8_t> col;
     Value<uint8_t> attr;
     Value<std::string> str;
+    Value<uint8_t> option;  // For MSP_DP_OPTIONS (sub_cmd 5) - byte at i=1
+    Value<uint8_t> option_value;  // For MSP_DP_OPTIONS (sub_cmd 5) - byte at i=2
 
     virtual ByteVectorUptr encode() const override {
         ByteVectorUptr data = std::make_unique<ByteVector>();
@@ -4190,6 +4192,10 @@ struct Displayport : public Message {
             rc &= data.unpack(col);
             rc &= data.unpack(attr);
             rc &= data.unpack(str);
+        }
+        else if (sub_cmd() == 5) {
+            rc &= data.unpack(option);
+            rc &= data.unpack(option_value);
         }
 
         return rc;
