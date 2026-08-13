@@ -1,12 +1,26 @@
 #include "PeriodicTimer.hpp"
 
+#include <algorithm>
+#include <cstdint>
+
 namespace msp {
+
+std::atomic<double> PeriodicTimer::time_scale_{1.0};
 
 PeriodicTimer::PeriodicTimer(std::function<void()> funct,
                              const double period_seconds) :
     funct(funct) {
     period_us =
         std::chrono::duration<size_t, std::micro>(size_t(period_seconds * 1e6));
+}
+
+void PeriodicTimer::setTimeScale(const double scale) {
+    time_scale_.store(std::clamp(scale, 0.05, 20.0),
+                      std::memory_order_relaxed);
+}
+
+double PeriodicTimer::getTimeScale() {
+    return time_scale_.load(std::memory_order_relaxed);
 }
 
 bool PeriodicTimer::start() {
@@ -24,8 +38,11 @@ bool PeriodicTimer::start() {
         while(true) {
             // call function
             funct();
-            // increment the reference time to know when to timeout waiting
-            tstart += period_us;
+            // increment the reference time to know when to timeout waiting,
+            // paced by the process-wide time scale (see setTimeScale)
+            tstart += std::chrono::microseconds(static_cast<int64_t>(
+                period_us.count() /
+                time_scale_.load(std::memory_order_relaxed)));
             // wait until end of period or stop is called
             if(mutex_timer.try_lock_until(tstart)) {
                 // gets here if lock was acquired (means someone called stop and

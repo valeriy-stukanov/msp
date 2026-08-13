@@ -48,6 +48,23 @@ public:
      */
     void setPeriod(const double& period_seconds);
 
+    /**
+     * @brief setTimeScale scale the pace of ALL periodic timers, process-wide:
+     * effective period = period / scale. For processes that follow a
+     * simulation clock running at scale x real time, so that timers keep
+     * their nominal rate in simulation time. Takes effect on each timer's
+     * next cycle, without restarting threads. Clamped to [0.05, 20]
+     * (a paused simulation must slow timers down, not freeze them).
+     * @param scale simulation seconds per wall-clock second
+     */
+    static void setTimeScale(double scale);
+
+    /**
+     * @brief getTimeScale get the current process-wide time scale
+     * @return scale in simulation seconds per wall-clock second
+     */
+    static double getTimeScale();
+
 private:
     std::shared_ptr<std::thread> thread_ptr;
     std::function<void()> funct;
@@ -56,6 +73,8 @@ private:
     std::chrono::steady_clock::time_point tstart;
 
     std::atomic_flag running_ = ATOMIC_FLAG_INIT;
+
+    static std::atomic<double> time_scale_;
 };
 
 }  // namespace msp
