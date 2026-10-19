@@ -75,6 +75,10 @@ bool Client::disconnectPort() {
         std::cerr << "Client: disconnect port" << std::endl;
 
     asio::error_code ec;
+    std::cerr << "BEFORE CANCEL" << std::endl;
+    port.cancel(ec);
+    if(ec) return false;
+    std::cerr << "BEFORE CLOSE" << std::endl;
     port.close(ec);
     if(ec) return false;
     std::cerr << "Client: disconnect port RETURNING" << std::endl;
