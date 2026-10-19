@@ -72,12 +72,12 @@ bool Client::connectPort(const std::string& device, const size_t baudrate) {
 
 bool Client::disconnectPort() {
     if (log_level_ >= DEBUG || 1)
-        std::cout << "Client: disconnect port" << std::endl;
+        std::cerr << "Client: disconnect port" << std::endl;
 
     asio::error_code ec;
     port.close(ec);
     if(ec) return false;
-    std::cout << "Client: disconnect port RETURNING" << std::endl;
+    std::cerr << "Client: disconnect port RETURNING" << std::endl;
     return true;
 }
 
@@ -157,7 +157,7 @@ bool Client::startReadThread() {
 
 bool Client::stopReadThread() {
     if (log_level_ >= DEBUG || 1)
-        std::cout << "Client: stop read thread" << std::endl;
+        std::cerr << "Client: stop read thread" << std::endl;
 
     bool rc = false;
     if(running_.test_and_set()) {
@@ -169,7 +169,7 @@ bool Client::stopReadThread() {
         rc = true;
     }
     running_.clear();
-    std::cout << "Client: stop read thread RETURNING" << std::endl;
+    std::cerr << "Client: stop read thread RETURNING" << std::endl;
     return rc;
 }
 
@@ -183,13 +183,13 @@ bool Client::startSubscriptions() {
 
 bool Client::stopSubscriptions() {
     if (log_level_ >= DEBUG || 1)
-        std::cout << "Client: stop subscriptions" << std::endl;
+        std::cerr << "Client: stop subscriptions" << std::endl;
 
     bool rc = true;
     for(const auto& sub : subscriptions) {
         rc &= sub.second->stop();
     }
-    std::cout << "Client: stop subscriptions RETURNING" << std::endl;
+    std::cerr << "Client: stop subscriptions RETURNING" << std::endl;
     return rc;
 }
 
