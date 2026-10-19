@@ -160,14 +160,20 @@ bool Client::stopReadThread() {
         std::cerr << "Client: stop read thread" << std::endl;
 
     bool rc = false;
+    std::cerr << "Before check" << std::endl;
     if(running_.test_and_set()) {
+        std::cerr << "Before stop" << std::endl;
         io.stop();
         // we need to clear flag before join reading thread
+        std::cerr << "Before clear inside if" << std::endl;
         running_.clear();
+        std::cerr << "Before thread join" << std::endl;
         thread.join();
+        std::cerr << "Before reset" << std::endl;
         io.reset();
         rc = true;
     }
+    std::cerr << "Before clear outside" << std::endl;
     running_.clear();
     std::cerr << "Client: stop read thread RETURNING" << std::endl;
     return rc;
