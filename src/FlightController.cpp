@@ -24,6 +24,7 @@ bool FlightController::connect(const std::string &device, const size_t baudrate,
         std::cerr
             << "cannot determine the flight controller variant (MSP_FC_VARIANT)"
             << std::endl;
+        std::cout << "Should return false right now" << std::endl;
         return false;
     }
 
