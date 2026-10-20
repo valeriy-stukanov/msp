@@ -427,9 +427,9 @@ void Client::processOneMessage(const asio::error_code& ec,
                   << " is not recognised!" << std::endl;
 
         if(stop_requested_) return;
-
+        
         asio::async_read_until(port,
-                               buffer,SECOND READ UNTIL
+                               buffer,
                                std::bind(&Client::messageReady,
                                          this,
                                          std::placeholders::_1,
