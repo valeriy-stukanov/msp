@@ -426,8 +426,10 @@ void Client::processOneMessage(const asio::error_code& ec,
         std::cerr << "Version marker " << size_t(ver_marker)
                   << " is not recognised!" << std::endl;
 
+        if(stop_requested_) return;
+
         asio::async_read_until(port,
-                               buffer,
+                               buffer,SECOND READ UNTIL
                                std::bind(&Client::messageReady,
                                          this,
                                          std::placeholders::_1,
