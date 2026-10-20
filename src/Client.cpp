@@ -164,7 +164,7 @@ bool Client::startReadThread() {
 bool Client::stopReadThread() {
     if (log_level_ >= DEBUG || 1)
         std::cerr << "Client: stop read thread" << std::endl;
-    stop_requested_ = ;
+    stop_requested_ = true;
     bool rc = false;
     std::cerr << "Before check" << std::endl;
     if(running_.test_and_set()) {
