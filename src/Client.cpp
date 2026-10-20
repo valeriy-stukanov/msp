@@ -126,7 +126,7 @@ bool Client::startReadThread() {
     thread = std::thread([this] {
         while (running_.test_and_set()) {
             try {
-                if (log_level_ >= DEBUG)
+                if (log_level_ >= DEBUG || 1)
                     std::cout << "Client: start port reading: " << device_ << " (" << baudrate_ << ")" << std::endl;
 
                 asio::async_read_until(port,
@@ -144,16 +144,17 @@ bool Client::startReadThread() {
                 // io.run might finish immidiatly
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             } catch (const std::exception &err) {
-                if (log_level_ >= WARNING)
+                if (log_level_ >= WARNING || 1)
                     std::cerr << "serial connection lost" << err.what() << std::endl;
 
                 waitForConnection();
             }
         }
         // restore cleared flag
+        std::cout << "Before clear" << std::endl;
         running_.clear();
 
-        if (log_level_ >= DEBUG)
+        if (log_level_ >= DEBUG || 1)
             std::cout << "Client: end of reconnection loop." << std::endl;
     });
     return true;
