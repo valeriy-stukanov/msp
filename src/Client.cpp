@@ -46,7 +46,7 @@ bool Client::stop() {
     if (log_level_ >= DEBUG)
         std::cout << "Client: stop requested" << std::endl;
 
-    return disconnectPort() && stopReadThread() && stopSubscriptions();
+    return stopReadThread() && disconnectPort() && stopSubscriptions();
 }
 
 bool Client::connectPort(const std::string& device, const size_t baudrate) {
