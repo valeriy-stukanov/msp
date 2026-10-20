@@ -123,6 +123,7 @@ bool Client::startReadThread() {
     // can't start if we are already running
     if(running_.test_and_set()) return false;
     // hit it!
+    stop_requested_ = false;
     thread = std::thread([this] {
         while (running_.test_and_set()) {
             try {
@@ -163,7 +164,7 @@ bool Client::startReadThread() {
 bool Client::stopReadThread() {
     if (log_level_ >= DEBUG || 1)
         std::cerr << "Client: stop read thread" << std::endl;
-
+    stop_requested_ = ;
     bool rc = false;
     std::cerr << "Before check" << std::endl;
     if(running_.test_and_set()) {
@@ -394,13 +395,14 @@ uint8_t Client::crcV2(uint8_t crc, const uint8_t& b) const {
 
 void Client::processOneMessage(const asio::error_code& ec,
                                const std::size_t& bytes_transferred) {
-    if(log_level_ >= DEBUG)
+    if(log_level_ >= DEBUG || 1)
         std::cout << "processOneMessage on " << bytes_transferred << " bytes"
                   << std::endl;
 
     if(ec == asio::error::operation_aborted) {
         // operation_aborted error probably means the client is being closed
         // notify waiting request methods
+        std::cout << "ABORTING PROCESS ON MESSAGE" << std::endl;
         cv_response.notify_all();
         return;
     }
@@ -462,7 +464,7 @@ void Client::processOneMessage(const asio::error_code& ec,
                 ->decode(request_received->payload);
         }
     }
-
+    std::cout << "SECOND READ UNTIL" << std::endl;
     asio::async_read_until(port,
                            buffer,
                            std::bind(&Client::messageReady,
@@ -474,7 +476,7 @@ void Client::processOneMessage(const asio::error_code& ec,
                                      std::placeholders::_1,
                                      std::placeholders::_2));
 
-    if(log_level_ >= DEBUG)
+    if(log_level_ >= DEBUG || 1)
         std::cout << "processOneMessage finished" << std::endl;
 }
 
