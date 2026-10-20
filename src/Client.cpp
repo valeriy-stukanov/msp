@@ -279,7 +279,7 @@ bool Client::sendMessageNoWait(const msp::Message& message) {
 
 uint8_t Client::extractChar() {
     if(buffer.sgetc() == EOF) {
-        if(log_level_ >= WARNING || 1)
+        if(log_level_ >= WARNING)
             std::cerr << "buffer returned EOF; reading char directly from port"
                       << std::endl;
         asio::read(port, buffer, asio::transfer_exactly(1));

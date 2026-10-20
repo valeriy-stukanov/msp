@@ -15,7 +15,7 @@ bool FlightController::connect(const std::string &device, const size_t baudrate,
     if(!client_.start(device, baudrate)) return false;
 
     msp::msg::FcVariant fcvar(fw_variant_);
-    if(client_.sendMessage(fcvar, 1.0) && !fcvar.identifier().empty()) {
+    if(client_.sendMessage(fcvar, 2.0) && !fcvar.identifier().empty()) {
         fw_variant_ = msp::variant_map.at(fcvar.identifier());
         client_.setVariant(fw_variant_);
         if(print_info) std::cout << fcvar;
