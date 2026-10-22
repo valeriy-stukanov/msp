@@ -43,10 +43,10 @@ bool Client::start(const std::string& device, const size_t baudrate) {
 }
 
 bool Client::stop() {
-    if (log_level_ >= DEBUG)
-        std::cout << "Client: stop requested" << std::endl;
+    if (log_level_ >= DEBUG || 1)
+        std::cerr << "Client: stop requested" << std::endl;
 
-    return disconnectPort() && stopReadThread() && stopSubscriptions();
+    return stopReadThread() && disconnectPort() && stopSubscriptions();
 }
 
 bool Client::connectPort(const std::string& device, const size_t baudrate) {
@@ -71,12 +71,17 @@ bool Client::connectPort(const std::string& device, const size_t baudrate) {
 }
 
 bool Client::disconnectPort() {
-    if (log_level_ >= DEBUG)
-        std::cout << "Client: disconnect port" << std::endl;
+    if (log_level_ >= DEBUG || 1)
+        std::cerr << "Client: disconnect port" << std::endl;
 
     asio::error_code ec;
+    std::cerr << "BEFORE CANCEL" << std::endl;
+    port.cancel(ec);
+    if(ec) return false;
+    std::cerr << "BEFORE CLOSE" << std::endl;
     port.close(ec);
     if(ec) return false;
+    std::cerr << "Client: disconnect port RETURNING" << std::endl;
     return true;
 }
 
@@ -100,7 +105,7 @@ void Client::waitForConnection() {
                     break;
                 }
 
-                if (log_level_ >= DEBUG) {
+                if (log_level_ >= DEBUG || 1) {
                     std::cerr << "Client: unable to connect to port. reconect in 1s" << std::endl;
                 }
             }
@@ -118,11 +123,12 @@ bool Client::startReadThread() {
     // can't start if we are already running
     if(running_.test_and_set()) return false;
     // hit it!
+    stop_requested_ = false;
     thread = std::thread([this] {
         while (running_.test_and_set()) {
             try {
-                if (log_level_ >= DEBUG)
-                    std::cout << "Client: start port reading: " << device_ << " (" << baudrate_ << ")" << std::endl;
+                if (log_level_ >= DEBUG || 1)
+                    std::cerr << "Client: start port reading: " << device_ << " (" << baudrate_ << ")" << std::endl;
 
                 asio::async_read_until(port,
                                buffer,
@@ -139,35 +145,43 @@ bool Client::startReadThread() {
                 // io.run might finish immidiatly
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             } catch (const std::exception &err) {
-                if (log_level_ >= WARNING)
+                if (log_level_ >= WARNING || 1)
                     std::cerr << "serial connection lost" << err.what() << std::endl;
 
                 waitForConnection();
             }
         }
         // restore cleared flag
+        std::cerr << "Before clear" << std::endl;
         running_.clear();
 
-        if (log_level_ >= DEBUG)
-            std::cout << "Client: end of reconnection loop." << std::endl;
+        if (log_level_ >= DEBUG || 1)
+            std::cerr << "Client: end of reconnection loop." << std::endl;
     });
     return true;
 }
 
 bool Client::stopReadThread() {
-    if (log_level_ >= DEBUG)
-        std::cout << "Client: stop read thread" << std::endl;
-
+    if (log_level_ >= DEBUG || 1)
+        std::cerr << "Client: stop read thread" << std::endl;
+    stop_requested_ = true;
     bool rc = false;
+    std::cerr << "Before check" << std::endl;
     if(running_.test_and_set()) {
+        std::cerr << "Before stop" << std::endl;
         io.stop();
         // we need to clear flag before join reading thread
+        std::cerr << "Before clear inside if" << std::endl;
         running_.clear();
+        std::cerr << "Before thread join" << std::endl;
         thread.join();
+        std::cerr << "Before reset" << std::endl;
         io.reset();
         rc = true;
     }
+    std::cerr << "Before clear outside" << std::endl;
     running_.clear();
+    std::cerr << "Client: stop read thread RETURNING" << std::endl;
     return rc;
 }
 
@@ -180,30 +194,31 @@ bool Client::startSubscriptions() {
 }
 
 bool Client::stopSubscriptions() {
-    if (log_level_ >= DEBUG)
-        std::cout << "Client: stop subscriptions" << std::endl;
+    if (log_level_ >= DEBUG || 1)
+        std::cerr << "Client: stop subscriptions" << std::endl;
 
     bool rc = true;
     for(const auto& sub : subscriptions) {
         rc &= sub.second->stop();
     }
+    std::cerr << "Client: stop subscriptions RETURNING" << std::endl;
     return rc;
 }
 
 bool Client::sendMessage(msp::Message& message, const double& timeout) {
     auto msg_id = size_t(message.id());
 
-    if(log_level_ >= DEBUG)
-        std::cout << msg_id << ": sending..." << std::endl;
+    if(log_level_ >= DEBUG || 1)
+        std::cerr << msg_id << ": sending..." << std::endl;
 
     if(!sendData(message.id(), message.encode())) {
-        if(log_level_ >= WARNING)
+        if(log_level_ >= WARNING || 1)
             std::cerr << msg_id <<  ": message failed to send" << std::endl;
         return false;
     }
 
-    if (log_level_ >= DEBUG)
-        std::cout << msg_id << ": sent" << std::endl;
+    if (log_level_ >= DEBUG || 1)
+        std::cerr << msg_id << ": sent" << std::endl;
 
     // prepare the condition check
     std::unique_lock<std::mutex> lock(cv_response_mtx);
@@ -224,8 +239,8 @@ bool Client::sendMessage(msp::Message& message, const double& timeout) {
                lock,
                std::chrono::milliseconds(size_t(timeout * 1e3)),
                predicate)) {
-            if(log_level_ >= INFO)
-                std::cout << "timed out waiting for response to message ID "
+            if(log_level_ >= INFO || 1)
+                std::cerr << "timed out waiting for response to message ID "
                           << size_t(message.id()) << std::endl;
             return false;
         }
@@ -251,11 +266,11 @@ bool Client::sendMessageNoWait(const msp::Message& message) {
         return true;
     }
 
-    if(log_level_ >= DEBUG)
-        std::cout << "async sending message - ID " << size_t(message.id())
+    if(log_level_ >= DEBUG || 1)
+        std::cerr << "async sending message - ID " << size_t(message.id())
                   << std::endl;
     if(!sendData(message.id(), message.encode())) {
-        if(log_level_ >= WARNING)
+        if(log_level_ >= WARNING || 1)
             std::cerr << "async sendData failed" << std::endl;
         return false;
     }
@@ -273,8 +288,8 @@ uint8_t Client::extractChar() {
 }
 
 bool Client::sendData(const msp::ID id, const ByteVector& data) {
-    if(log_level_ >= DEBUG)
-        std::cout << "sending: " << size_t(id) << " | " << data;
+    if(log_level_ >= DEBUG || 1)
+        std::cerr << "sending: " << size_t(id) << " | " << data;
     ByteVector msg;
     if(static_cast<int>(id) > 255) {
         msg = packMessageV2(id, data);
@@ -282,7 +297,7 @@ bool Client::sendData(const msp::ID id, const ByteVector& data) {
     else {
         msg = packMessageV1(id, data);
     }
-    if(log_level_ >= DEBUG) std::cout << "packed: " << msg;
+    if(log_level_ >= DEBUG || 1) std::cerr << "packed: " << msg;
     asio::error_code ec;
     std::size_t bytes_written;
     {
@@ -296,8 +311,8 @@ bool Client::sendData(const msp::ID id, const ByteVector& data) {
                   << std::endl;
         return false;
     }
-    if(log_level_ >= DEBUG)
-        std::cout << "write complete: " << bytes_written << " vs " << msg.size()
+    if(log_level_ >= DEBUG || 1)
+        std::cerr << "write complete: " << bytes_written << " vs " << msg.size()
                   << std::endl;
     return (bytes_written == msg.size());
 }
@@ -380,13 +395,14 @@ uint8_t Client::crcV2(uint8_t crc, const uint8_t& b) const {
 
 void Client::processOneMessage(const asio::error_code& ec,
                                const std::size_t& bytes_transferred) {
-    if(log_level_ >= DEBUG)
-        std::cout << "processOneMessage on " << bytes_transferred << " bytes"
+    if(log_level_ >= DEBUG || 1)
+        std::cerr << "processOneMessage on " << bytes_transferred << " bytes"
                   << std::endl;
 
     if(ec == asio::error::operation_aborted) {
         // operation_aborted error probably means the client is being closed
         // notify waiting request methods
+        std::cerr << "ABORTING PROCESS ON MESSAGE" << std::endl;
         cv_response.notify_all();
         return;
     }
@@ -410,6 +426,8 @@ void Client::processOneMessage(const asio::error_code& ec,
         std::cerr << "Version marker " << size_t(ver_marker)
                   << " is not recognised!" << std::endl;
 
+        if(stop_requested_) return;
+        
         asio::async_read_until(port,
                                buffer,
                                std::bind(&Client::messageReady,
@@ -448,7 +466,7 @@ void Client::processOneMessage(const asio::error_code& ec,
                 ->decode(request_received->payload);
         }
     }
-
+    std::cerr << "SECOND READ UNTIL" << std::endl;
     asio::async_read_until(port,
                            buffer,
                            std::bind(&Client::messageReady,
@@ -460,8 +478,8 @@ void Client::processOneMessage(const asio::error_code& ec,
                                      std::placeholders::_1,
                                      std::placeholders::_2));
 
-    if(log_level_ >= DEBUG)
-        std::cout << "processOneMessage finished" << std::endl;
+    if(log_level_ >= DEBUG || 1)
+        std::cerr << "processOneMessage finished" << std::endl;
 }
 
 std::pair<iterator, bool> Client::messageReady(iterator begin,
@@ -532,8 +550,8 @@ ReceivedMessage Client::processOneMessageV1() {
         uint8_t high_b = extractChar();
         uint16_t real_len = (high_b << 8) + low_b;
 
-        if (log_level_ >= DEBUG) {
-            std::cout << "jumbo msg, real length: " << real_len << std::endl;
+        if (log_level_ >= DEBUG || 1) {
+            std::cerr << "jumbo msg, real length: " << real_len << std::endl;
         }
 
         for(size_t i(0); i < real_len; i++) {
